@@ -1,0 +1,42 @@
+name: Refresh Dashboard Data
+ 
+on:
+  # Run automatically every Monday and Thursday at 8 AM PT (16:00 UTC)
+  schedule:
+    - cron: "0 16 * * 1,4"
+ 
+  # Also allow manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+ 
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit data.json back to the repo
+ 
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+ 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+ 
+      - name: Install dependencies
+        run: pip install smartsheet-python-sdk
+ 
+      - name: Fetch data from Smartsheet
+        env:
+          SMARTSHEET_TOKEN: ${{ secrets.SMARTSHEET_TOKEN }}
+        run: python scripts/fetch_data.py
+ 
+      - name: Commit updated data.json
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          # Only commit if data.json actually changed
+          git diff --cached --quiet || git commit -m "chore: refresh dashboard data [$(date -u '+%Y-%m-%d %H:%M UTC')]"
+          git push
+ 
