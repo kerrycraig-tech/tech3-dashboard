@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tech-3 Initiative Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.5px; }
+    header .subtitle { font-size: 0.8rem; color: #a0aec0; margin-top: 3px; }
+    #last-updated { font-size: 0.75rem; color: #718096; text-align: right; }
+
+    /* ── Summary Bar ── */
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      padding: 20px 32px 0;
+      flex-wrap: wrap;
+    }
+    .summary-card {
+      background: white;
+      border-radius: 10px;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      flex: 1;
+      min-width: 130px;
+    }
+    .summary-card .dot {
+      width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-red    { background: #e53e3e; }
+    .dot-yellow { background: #d69e2e; }
+    .dot-green  { background: #38a169; }
+    .dot-block  { background: #805ad5; }
+    .dot-sos    { background: #dd6b20; }
+    .summary-card .label { font-size: 0.72rem; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-card .count { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+    .count-red    { color: #e53e3e; }
+    .count-yellow { color: #d69e2e; }
+    .count-green  { color: #38a169; }
+    .count-block  { color: #805ad5; }
+    .count-sos    { color: #dd6b20; }
+
+    /* ── Alerts ── */
+    .alerts-section {
+      margin: 20px 32px 0;
+    }
+    .alerts-section h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #718096;
+      margin-bottom: 10px;
+    }
+    .alert-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .alert-pill {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .alert-pill:hover { opacity: 0.8; }
+    .pill-blocked { background: #e9d8fd; color: #553c9a; }
+    .pill-sos     { background: #feebc8; color: #9c4221; }
+
+    /* ── Program Grid ── */
+    .grid-section {
+      padding: 20px 32px 40px;
+    }
+    .grid-section h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #718096;
+      margin-bottom: 14px;
+    }
+    .program-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    /* ── Program Card ── */
+    .program-card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 20px;
+      cursor: pointer;
+      border-left: 5px solid transparent;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative;
+    }
+    .program-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    .card-red    { border-left-color: #e53e3e; }
+    .card-yellow { border-left-color: #d69e2e; }
+    .card-green  { border-left-color: #38a169; }
+    .card-grey   { border-left-color: #a0aec0; }
+
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .card-id { font-size: 0.72rem; font-weight: 700; color: #718096; }
+    .card-badges { display: flex; gap: 4px; }
+    .badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+    .badge-blocked { background: #e9d8fd; color: #553c9a; }
+    .badge-sos     { background: #feebc8; color: #9c4221; }
+
+    .card-name { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+    .card-owners { font-size: 0.75rem; color: #718096; margin-bottom: 12px; }
+
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .status-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+    }
+    .pill-red    { background: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; }
+    .pill-yellow { background: #fffff0; color: #d69e2e; border: 1px solid #fefcbf; }
+    .pill-green  { background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5; }
+    .pill-grey   { background: #f7fafc; color: #718096; border: 1px solid #e2e8f0; }
+
+    .trend-icon { font-size: 1rem; }
+    .progress-wrap { flex: 1; margin: 0 10px; }
+    .progress-bar-bg {
+      background: #edf2f7;
+      border-radius: 4px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s;
+    }
+    .fill-red    { background: #e53e3e; }
+    .fill-yellow { background: #d69e2e; }
+    .fill-green  { background: #38a169; }
+    .fill-grey   { background: #a0aec0; }
+    .progress-pct { font-size: 0.72rem; color: #718096; margin-top: 3px; text-align: right; }
+
+    /* ── Detail Panel ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 100;
+    }
+    .overlay.open { display: block; }
+
+    .detail-panel {
+      position: fixed;
+      top: 0; right: -560px;
+      width: 540px;
+      max-width: 95vw;
+      height: 100vh;
+      background: white;
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.18);
+      transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+      overflow: hidden;
+    }
+    .detail-panel.open { right: 0; }
+
+    .panel-header {
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      flex-shrink: 0;
+    }
+    .panel-close {
+      position: absolute;
+      top: 18px; right: 20px;
+      background: none; border: none;
+      font-size: 1.4rem; cursor: pointer;
+      color: #718096;
+      line-height: 1;
+    }
+    .panel-close:hover { color: #1a1a2e; }
+    .panel-id { font-size: 0.72rem; font-weight: 700; color: #718096; margin-bottom: 4px; }
+    .panel-name { font-size: 1.25rem; font-weight: 700; margin-bottom: 2px; }
+    .panel-meta { font-size: 0.8rem; color: #718096; }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    .panel-section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #718096;
+      margin: 18px 0 10px;
+      font-weight: 700;
+    }
+    .panel-section-title:first-child { margin-top: 0; }
+
+    /* Current snapshot row */
+    .snapshot-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .snap-item {
+      background: #f7fafc;
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: center;
+      flex: 1;
+      min-width: 80px;
+    }
+    .snap-label { font-size: 0.68rem; color: #718096; text-transform: uppercase; margin-bottom: 4px; }
+    .snap-val { font-size: 1.1rem; font-weight: 700; }
+
+    /* History timeline */
+    .timeline { display: flex; flex-direction: column; gap: 6px; }
+    .timeline-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #f7fafc;
+    }
+    .tl-date { color: #718096; min-width: 82px; font-size: 0.75rem; }
+    .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .tl-status { font-weight: 600; min-width: 54px; }
+    .tl-trend { font-size: 0.85rem; }
+    .tl-pct { color: #718096; margin-left: auto; }
+    .tl-badges { display: flex; gap: 4px; }
+
+    /* Chart */
+    .chart-wrap {
+      position: relative;
+      height: 200px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Tech-3 Initiative · CTREC Data Security</h1>
+    <div class="subtitle">9 Programs · Leadership Review Dashboard</div>
+  </div>
+  <div id="last-updated"></div>
+</header>
+
+<div class="summary-bar" id="summary-bar"></div>
+<div class="alerts-section" id="alerts-section"></div>
+<div class="grid-section">
+  <h2>All Programs</h2>
+  <div class="program-grid" id="program-grid"></div>
+</div>
+
+<!-- Detail panel -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="detail-panel" id="detail-panel">
+  <div class="panel-header">
+    <button class="panel-close" onclick="closePanel()">✕</button>
+    <div class="panel-id" id="panel-id"></div>
+    <div class="panel-name" id="panel-name"></div>
+    <div class="panel-meta" id="panel-meta"></div>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<script>
+// ── Embedded fallback data (used when running locally without a server) ──
+const FALLBACK_DATA = {
+  "meta": {
+    "last_updated": "2026-04-14",
+    "sheet_url": "https://app.smartsheet.com/sheets/m3jgRw82F4gxcCg32rxq8fW3FWQQqqmHfRM4JPH1",
+    "total_meetings": 11,
+    "programs_count": 9
+  },
+  "programs": [
+    {"id":"03.01","name":"PII Minimization","lead_org":"CyberCRAFT","owners":"Ashwin / Bernard"},
+    {"id":"03.02","name":"ADU Controls Adoption","lead_org":"CyberCRAFT","owners":"Tapan / Chandra"},
+    {"id":"03.03","name":"FGAC Adoption","lead_org":"CyberCRAFT","owners":"Tapan / Chandra"},
+    {"id":"03.04","name":"Data Security Controls","lead_org":"CyberCRAFT","owners":"Ashwin / Shankar"},
+    {"id":"03.05","name":"Consent Option Adoption","lead_org":"GTM Tech","owners":"Ben / Satya"},
+    {"id":"03.06","name":"Removal of Dormant Accounts/Data","lead_org":"CyberCRAFT","owners":"Derek"},
+    {"id":"03.07","name":"Static Code Analyzer","lead_org":"FLP Tech","owners":"Sandeep"},
+    {"id":"03.08","name":"Standardize/Streamline DSR","lead_org":"FLP Tech","owners":"Sandeep"},
+    {"id":"03.09","name":"DG4I / Inventory System","lead_org":"CyberCRAFT","owners":"Chandra / Emily"}
+  ],
+  "meetings": [
+    "2025-09-15","2025-09-29","2025-10-20","2025-11-03",
+    "2025-12-01","2025-12-15","2026-01-12","2026-01-26",
+    "2026-02-27","2026-03-13","2026-04-14"
+  ],
+  "history": [
+    {"program_id":"03.01","date":"2025-09-15","status":"Yellow","prev_status":"N/A - First Meeting","trend":"Flat","progress":5,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2025-09-29","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":5,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2025-10-20","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":8,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2025-11-03","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":8,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2025-12-01","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":10,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2025-12-15","status":"Red","prev_status":"Yellow","trend":"Down","progress":10,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2026-01-12","status":"Red","prev_status":"Red","trend":"Flat","progress":10,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2026-01-26","status":"Red","prev_status":"Red","trend":"Flat","progress":10,"blocked":false,"sos":false},
+    {"program_id":"03.01","date":"2026-02-27","status":"Red","prev_status":"Red","trend":"Flat","progress":12,"blocked":false,"sos":true},
+    {"program_id":"03.01","date":"2026-03-13","status":"Red","prev_status":"Red","trend":"Flat","progress":12,"blocked":false,"sos":true},
+    {"program_id":"03.01","date":"2026-04-14","status":"Red","prev_status":"Red","trend":"Flat","progress":12,"blocked":false,"sos":true},
+    {"program_id":"03.02","date":"2025-09-15","status":"Yellow","prev_status":"N/A - First Meeting","trend":"Flat","progress":0,"blocked":false,"sos":false},
+    {"program_id":"03.02","date":"2025-09-29","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":0,"blocked":false,"sos":false},
+    {"program_id":"03.02","date":"2025-10-20","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":0,"blocked":false,"sos":false},
+    {"program_id":"03.02","date":"2025-11-03","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":0,"blocked":false,"sos":false},
+    {"program_id":"03.02","date":"2025-12-01","status":"Red","prev_status":"Yellow","trend":"Down","progress":0,"blocked":true,"sos":false},
+    {"program_id":"03.02","date":"2025-12-15","status":"Red","prev_status":"Red","trend":"Flat","progress":0,"blocked":true,"sos":false},
+    {"program_id":"03.02","date":"2026-01-12","status":"Red","prev_status":"Red","trend":"Flat","progress":0,"blocked":true,"sos":false},
+    {"program_id":"03.02","date":"2026-01-26","status":"Red","prev_status":"Red","trend":"Flat","progress":0,"blocked":true,"sos":false},
+    {"program_id":"03.02","date":"2026-02-27","status":"Red","prev_status":"Red","trend":"Flat","progress":0,"blocked":true,"sos":true},
+    {"program_id":"03.02","date":"2026-03-13","status":"Red","prev_status":"Red","trend":"Flat","progress":0,"blocked":true,"sos":true},
+    {"program_id":"03.02","date":"2026-04-14","status":"Red","prev_status":"Red","trend":"Flat","progress":0,"blocked":true,"sos":true},
+    {"program_id":"03.03","date":"2025-09-15","status":"Green","prev_status":"N/A - First Meeting","trend":"Flat","progress":20,"blocked":false,"sos":false},
+    {"program_id":"03.03","date":"2025-09-29","status":"Green","prev_status":"Green","trend":"Flat","progress":25,"blocked":false,"sos":false},
+    {"program_id":"03.03","date":"2025-10-20","status":"Yellow","prev_status":"Green","trend":"Down","progress":25,"blocked":false,"sos":false},
+    {"program_id":"03.03","date":"2025-11-03","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":28,"blocked":false,"sos":false},
+    {"program_id":"03.03","date":"2025-12-01","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.03","date":"2025-12-15","status":"Red","prev_status":"Yellow","trend":"Down","progress":30,"blocked":true,"sos":false},
+    {"program_id":"03.03","date":"2026-01-12","status":"Red","prev_status":"Red","trend":"Flat","progress":35,"blocked":true,"sos":false},
+    {"program_id":"03.03","date":"2026-01-26","status":"Red","prev_status":"Red","trend":"Flat","progress":35,"blocked":true,"sos":false},
+    {"program_id":"03.03","date":"2026-02-27","status":"Red","prev_status":"Red","trend":"Flat","progress":38,"blocked":true,"sos":false},
+    {"program_id":"03.03","date":"2026-03-13","status":"Red","prev_status":"Red","trend":"Flat","progress":40,"blocked":true,"sos":false},
+    {"program_id":"03.03","date":"2026-04-14","status":"Red","prev_status":"Red","trend":"Flat","progress":40,"blocked":true,"sos":false},
+    {"program_id":"03.04","date":"2025-09-15","status":"Green","prev_status":"N/A - First Meeting","trend":"Flat","progress":20,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2025-09-29","status":"Green","prev_status":"Green","trend":"Flat","progress":25,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2025-10-20","status":"Green","prev_status":"Green","trend":"Flat","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2025-11-03","status":"Yellow","prev_status":"Green","trend":"Down","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2025-12-01","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":33,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2025-12-15","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":35,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2026-01-12","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":37,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2026-01-26","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":38,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2026-02-27","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":39,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2026-03-13","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":40,"blocked":false,"sos":false},
+    {"program_id":"03.04","date":"2026-04-14","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":40,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2025-09-15","status":"Green","prev_status":"N/A - First Meeting","trend":"Flat","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2025-09-29","status":"Green","prev_status":"Green","trend":"Flat","progress":35,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2025-10-20","status":"Green","prev_status":"Green","trend":"Flat","progress":38,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2025-11-03","status":"Green","prev_status":"Green","trend":"Flat","progress":40,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2025-12-01","status":"Green","prev_status":"Green","trend":"Flat","progress":43,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2025-12-15","status":"Green","prev_status":"Green","trend":"Flat","progress":45,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2026-01-12","status":"Green","prev_status":"Green","trend":"Flat","progress":47,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2026-01-26","status":"Green","prev_status":"Green","trend":"Flat","progress":49,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2026-02-27","status":"Green","prev_status":"Green","trend":"Flat","progress":51,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2026-03-13","status":"Green","prev_status":"Green","trend":"Flat","progress":53,"blocked":false,"sos":false},
+    {"program_id":"03.05","date":"2026-04-14","status":"Green","prev_status":"Green","trend":"Flat","progress":54,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2025-09-15","status":"Yellow","prev_status":"N/A - First Meeting","trend":"Flat","progress":10,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2025-09-29","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":12,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2025-10-20","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":15,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2025-11-03","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":18,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2025-12-01","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":20,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2025-12-15","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":22,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2026-01-12","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":24,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2026-01-26","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":26,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2026-02-27","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":28,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2026-03-13","status":"Yellow","prev_status":"Yellow","trend":"Up","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.06","date":"2026-04-14","status":"Green","prev_status":"Yellow","trend":"Up","progress":31.5,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2025-09-15","status":"Green","prev_status":"N/A - First Meeting","trend":"Flat","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2025-09-29","status":"Green","prev_status":"Green","trend":"Flat","progress":35,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2025-10-20","status":"Green","prev_status":"Green","trend":"Flat","progress":40,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2025-11-03","status":"Green","prev_status":"Green","trend":"Flat","progress":44,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2025-12-01","status":"Green","prev_status":"Green","trend":"Flat","progress":48,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2025-12-15","status":"Green","prev_status":"Green","trend":"Flat","progress":50,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2026-01-12","status":"Green","prev_status":"Green","trend":"Flat","progress":53,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2026-01-26","status":"Green","prev_status":"Green","trend":"Flat","progress":55,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2026-02-27","status":"Green","prev_status":"Green","trend":"Flat","progress":57,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2026-03-13","status":"Green","prev_status":"Green","trend":"Flat","progress":59,"blocked":false,"sos":false},
+    {"program_id":"03.07","date":"2026-04-14","status":"Green","prev_status":"Green","trend":"Flat","progress":60,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2025-09-15","status":"Green","prev_status":"N/A - First Meeting","trend":"Flat","progress":15,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2025-09-29","status":"Green","prev_status":"Green","trend":"Flat","progress":18,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2025-10-20","status":"Green","prev_status":"Green","trend":"Flat","progress":22,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2025-11-03","status":"Green","prev_status":"Green","trend":"Flat","progress":25,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2025-12-01","status":"Green","prev_status":"Green","trend":"Flat","progress":28,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2025-12-15","status":"Green","prev_status":"Green","trend":"Flat","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2026-01-12","status":"Green","prev_status":"Green","trend":"Flat","progress":33,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2026-01-26","status":"Green","prev_status":"Green","trend":"Flat","progress":35,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2026-02-27","status":"Green","prev_status":"Green","trend":"Flat","progress":37,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2026-03-13","status":"Green","prev_status":"Green","trend":"Flat","progress":39,"blocked":false,"sos":false},
+    {"program_id":"03.08","date":"2026-04-14","status":"Green","prev_status":"Green","trend":"Flat","progress":40,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2025-09-15","status":"Green","prev_status":"N/A - First Meeting","trend":"Flat","progress":25,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2025-09-29","status":"Green","prev_status":"Green","trend":"Flat","progress":30,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2025-10-20","status":"Yellow","prev_status":"Green","trend":"Down","progress":32,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2025-11-03","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":35,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2025-12-01","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":38,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2025-12-15","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":40,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2026-01-12","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":42,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2026-01-26","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":44,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2026-02-27","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":46,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2026-03-13","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":48,"blocked":false,"sos":false},
+    {"program_id":"03.09","date":"2026-04-14","status":"Yellow","prev_status":"Yellow","trend":"Flat","progress":50,"blocked":false,"sos":false}
+  ]
+};
+
+// ── Helpers ──
+const STATUS_COLOR = { Red:'red', Yellow:'yellow', Green:'green', Grey:'grey' };
+const TREND_ICON   = { Up:'↑', Down:'↓', Flat:'→' };
+const DOT_COLOR    = { red:'#e53e3e', yellow:'#d69e2e', green:'#38a169', grey:'#a0aec0' };
+
+function statusClass(s)  { return STATUS_COLOR[s] || 'grey'; }
+function fmtDate(d) {
+  const [y,m,day] = d.split('-');
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]} ${+day}, ${y}`;
+}
+
+let DATA = null;
+let progressChart = null;
+
+// ── Load data ──
+async function loadData() {
+  try {
+    const res = await fetch('data.json');
+    if (!res.ok) throw new Error('no file');
+    DATA = await res.json();
+  } catch {
+    DATA = FALLBACK_DATA;
+  }
+  render();
+}
+
+// ── Render everything ──
+function render() {
+  renderMeta();
+  renderSummary();
+  renderAlerts();
+  renderGrid();
+}
+
+function renderMeta() {
+  const el = document.getElementById('last-updated');
+  el.innerHTML = `Data as of <strong style="color:#e2e8f0">${fmtDate(DATA.meta.last_updated)}</strong><br>
+    <a href="${DATA.meta.sheet_url}" target="_blank" style="color:#63b3ed;text-decoration:none;font-size:0.7rem">View in Smartsheet ↗</a>`;
+}
+
+function latestFor(id) {
+  return DATA.history.filter(h => h.program_id === id).slice(-1)[0];
+}
+
+function renderSummary() {
+  const rows = DATA.programs.map(p => latestFor(p.id));
+  const counts = { Red:0, Yellow:0, Green:0, blocked:0, sos:0 };
+  rows.forEach(r => {
+    if (r.status === 'Red')    counts.Red++;
+    if (r.status === 'Yellow') counts.Yellow++;
+    if (r.status === 'Green')  counts.Green++;
+    if (r.blocked) counts.blocked++;
+    if (r.sos)     counts.sos++;
+  });
+  document.getElementById('summary-bar').innerHTML = `
+    <div class="summary-card">
+      <div class="dot dot-red"></div>
+      <div><div class="label">Red</div><div class="count count-red">${counts.Red}</div></div>
+    </div>
+    <div class="summary-card">
+      <div class="dot dot-yellow"></div>
+      <div><div class="label">Yellow</div><div class="count count-yellow">${counts.Yellow}</div></div>
+    </div>
+    <div class="summary-card">
+      <div class="dot dot-green"></div>
+      <div><div class="label">Green</div><div class="count count-green">${counts.Green}</div></div>
+    </div>
+    <div class="summary-card">
+      <div class="dot dot-block"></div>
+      <div><div class="label">Blocked</div><div class="count count-block">${counts.blocked}</div></div>
+    </div>
+    <div class="summary-card">
+      <div class="dot dot-sos"></div>
+      <div><div class="label">SOS</div><div class="count count-sos">${counts.sos}</div></div>
+    </div>`;
+}
+
+function renderAlerts() {
+  const blocked = DATA.programs.filter(p => latestFor(p.id).blocked);
+  const sos     = DATA.programs.filter(p => latestFor(p.id).sos);
+  if (!blocked.length && !sos.length) {
+    document.getElementById('alerts-section').innerHTML = '';
+    return;
+  }
+  const pills = [
+    ...blocked.map(p => `<span class="alert-pill pill-blocked" onclick="openPanel('${p.id}')">🚧 ${p.id} ${p.name}</span>`),
+    ...sos.map(p =>     `<span class="alert-pill pill-sos"     onclick="openPanel('${p.id}')">🆘 ${p.id} ${p.name}</span>`)
+  ].join('');
+  document.getElementById('alerts-section').innerHTML = `<h2>Alerts</h2><div class="alert-pills">${pills}</div>`;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('program-grid');
+  grid.innerHTML = DATA.programs.map(p => {
+    const row = latestFor(p.id);
+    const sc  = statusClass(row.status);
+    const badges = [
+      row.blocked ? '<span class="badge badge-blocked">Blocked</span>' : '',
+      row.sos     ? '<span class="badge badge-sos">SOS</span>'         : ''
+    ].join('');
+    return `
+      <div class="program-card card-${sc}" onclick="openPanel('${p.id}')">
+        <div class="card-header">
+          <span class="card-id">${p.id}</span>
+          <div class="card-badges">${badges}</div>
+        </div>
+        <div class="card-name">${p.name}</div>
+        <div class="card-owners">${p.lead_org} · ${p.owners}</div>
+        <div class="card-footer">
+          <span class="status-pill pill-${sc}">${row.status}</span>
+          <div class="progress-wrap">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill fill-${sc}" style="width:${row.progress}%"></div>
+            </div>
+            <div class="progress-pct">${row.progress}%</div>
+          </div>
+          <span class="trend-icon" title="Trend: ${row.trend}">${TREND_ICON[row.trend] || '→'}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Detail Panel ──
+function openPanel(programId) {
+  const prog = DATA.programs.find(p => p.id === programId);
+  const rows = DATA.history.filter(h => h.program_id === programId);
+  const latest = rows[rows.length - 1];
+  const sc = statusClass(latest.status);
+
+  document.getElementById('panel-id').textContent   = prog.id;
+  document.getElementById('panel-name').textContent = prog.name;
+  document.getElementById('panel-meta').textContent = `${prog.lead_org}  ·  ${prog.owners}`;
+
+  // Snapshot
+  const snapBadges = [
+    latest.blocked ? '<span class="badge badge-blocked" style="font-size:0.7rem">Blocked</span>' : '',
+    latest.sos     ? '<span class="badge badge-sos" style="font-size:0.7rem">SOS</span>'         : ''
+  ].join(' ');
+
+  // Timeline rows
+  const timelineHTML = rows.slice().reverse().map(r => {
+    const c = statusClass(r.status);
+    const b = r.blocked ? '<span class="badge badge-blocked">Blocked</span>' : '';
+    const s = r.sos     ? '<span class="badge badge-sos">SOS</span>'         : '';
+    return `<div class="timeline-row">
+      <span class="tl-date">${fmtDate(r.date)}</span>
+      <span class="tl-dot" style="background:${DOT_COLOR[c]}"></span>
+      <span class="tl-status" style="color:${DOT_COLOR[c]}">${r.status}</span>
+      <span class="tl-trend">${TREND_ICON[r.trend] || '→'}</span>
+      <div class="tl-badges">${b}${s}</div>
+      <span class="tl-pct">${r.progress}%</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('panel-body').innerHTML = `
+    <div class="panel-section-title">Current Snapshot · ${fmtDate(latest.date)}</div>
+    <div class="snapshot-row">
+      <div class="snap-item">
+        <div class="snap-label">Status</div>
+        <div class="snap-val" style="color:${DOT_COLOR[sc]}">${latest.status}</div>
+      </div>
+      <div class="snap-item">
+        <div class="snap-label">Progress</div>
+        <div class="snap-val">${latest.progress}%</div>
+      </div>
+      <div class="snap-item">
+        <div class="snap-label">Trend</div>
+        <div class="snap-val">${TREND_ICON[latest.trend] || '→'}</div>
+      </div>
+      <div class="snap-item">
+        <div class="snap-label">Flags</div>
+        <div class="snap-val" style="font-size:0.85rem">${snapBadges || '—'}</div>
+      </div>
+    </div>
+
+    <div class="panel-section-title">Progress Over Time</div>
+    <div class="chart-wrap">
+      <canvas id="progress-chart"></canvas>
+    </div>
+
+    <div class="panel-section-title">Status History (${rows.length} meetings)</div>
+    <div class="timeline">${timelineHTML}</div>
+  `;
+
+  // Build Chart
+  if (progressChart) { progressChart.destroy(); progressChart = null; }
+  const ctx = document.getElementById('progress-chart').getContext('2d');
+  const colorMap = { Red:'#e53e3e', Yellow:'#d69e2e', Green:'#38a169', Grey:'#a0aec0' };
+  progressChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: rows.map(r => fmtDate(r.date)),
+      datasets: [{
+        label: 'Progress %',
+        data: rows.map(r => r.progress),
+        borderColor: DOT_COLOR[sc],
+        backgroundColor: DOT_COLOR[sc] + '22',
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: rows.map(r => colorMap[r.status] || '#a0aec0'),
+        tension: 0.3,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y}%`,
+            afterLabel: ctx => {
+              const r = rows[ctx.dataIndex];
+              return `Status: ${r.status}${r.blocked ? '  🚧' : ''}${r.sos ? '  🆘' : ''}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: 0, max: 100,
+          ticks: { callback: v => v + '%', font: { size: 11 } },
+          grid: { color: '#f0f2f5' }
+        },
+        x: {
+          ticks: { font: { size: 10 }, maxRotation: 35 },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('detail-panel').classList.remove('open');
+  if (progressChart) { progressChart.destroy(); progressChart = null; }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+// ── Boot ──
+loadData();
+</script>
+</body>
+</html>
